@@ -4,6 +4,20 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+KNOWN_MODELS = [
+        "Mythos 5" ,
+        "Fable 5"  ,
+        "Opus 5"   ,
+        "Sonnet 5"  ,
+        "Haiku 4.5",
+        "Opus 4.8" , 
+        "Opus 4.7",
+        "Opus 4.6" , 
+        "Opus 3" , 
+        "Sonnet 4.6"        
+]
+
+
 def fetch_emails():
     email=os.getenv('GMAIL_MAIL')
     pwd=os.getenv('GMAIL_PASSWORD')
@@ -26,6 +40,15 @@ def fetch_emails():
     mail.logout()
 
     return email_ids
+
+def fetch_model(msg):
+    models=[]
+    for i in KNOWN_MODELS :
+        if i.lower() in msg.lower():
+            models.append(i)
+    return models
+   
+    
 
 email_ids=[b'31099',
 b'31100',
@@ -51,23 +74,23 @@ mail = imaplib.IMAP4_SSL(imap_server)
 mail.login(username, password)
 mail.select("inbox")
 
-e_id=b'31099'
+e_id=b'31120'
 try:
         # Fetch by ID
         status, msg_data = mail.fetch(e_id, '(RFC822)')
-        print("MSG_DATA")
+      
         
         if status == 'OK' and msg_data[0][1]:
             raw_email = msg_data[0][1]
             msg = email.message_from_bytes(raw_email , policy=default)
-            print(dir(msg))
-            print(f"ID: {e_id.decode()} | Subject: {msg['Subject']}")
-            print(msg.is_multipart())
+            
 
             for i in msg.walk():
                 if i.get_content_type() == "text/plain":
                     body = i.get_content()
-                    print(body)
+                    
+            model=fetch_model(body)
+            print(model)
             
         else:
             print(f"ID: {e_id.decode()} | Not found or error.")
