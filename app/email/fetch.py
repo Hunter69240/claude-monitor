@@ -2,7 +2,13 @@ import os
 import imaplib
 from dotenv import load_dotenv
 
+import email
+from email.policy import default
 load_dotenv()
+
+
+
+
 
 KNOWN_MODELS = [
         "Mythos 5" ,
@@ -19,27 +25,58 @@ KNOWN_MODELS = [
 
 
 def fetch_emails():
-    email=os.getenv('GMAIL_MAIL')
-    pwd=os.getenv('GMAIL_PASSWORD')
+
+    email_cred=os.getenv('GMAIL_MAIL')
+    pwd_cred=os.getenv('GMAIL_PASSWORD')
 
     mail = imaplib.IMAP4_SSL('imap.gmail.com')
-
-    mail.login(email,pwd)
-
+    mail.login(email_cred,pwd_cred)
     mail.select('inbox')
 
     status, message_ids = mail.search(None, 'FROM "noreply@statuspage.io"')
 
     email_ids = message_ids[0].split()
 
-
+    count=0
+    records=[]
     for eid in email_ids:
-        # Fetch and process email
-       print(eid)
+        if count ==10:
+            break
+        record={}
+        record["email_id"]=eid
+        record["body"] = fetch_body(mail,eid)
+        if record["body"] == False:
+            continue # Later think of logging
+        record["model"] = fetch_model(record["body"])
+        
+        records.append(record)
+        count+=1
+        print(records)
+    mail.close()
+    mail.logout() 
     
-    mail.logout()
+    return records
 
-    return email_ids
+
+def fetch_body(mail,eid):
+    print("INside fetch_body with : ",eid)
+    try:
+            # Fetch by ID
+            status, msg_data = mail.fetch(eid, '(RFC822)')
+            if status == 'OK' and msg_data[0][1]:
+                raw_email = msg_data[0][1]
+                msg = email.message_from_bytes(raw_email , policy=default)
+                for i in msg.walk():
+                    if i.get_content_type() == "text/plain":
+                        body = i.get_content() 
+                print("Got body" , body)
+                return  body       
+               
+            else:
+                return False
+    except Exception as e:
+        print("Exception",e)
+        return False
 
 def fetch_model(msg):
     models=[]
@@ -48,55 +85,5 @@ def fetch_model(msg):
             models.append(i)
     return models
    
-    
 
-email_ids=[b'31099',
-b'31100',
-b'31101',
-b'31118',
-b'31119',
-b'31120']
-
-print(email_ids)
-
-import imaplib
-import email
-from email.policy import default
-
-# Configuration
-imap_server = "imap.gmail.com"
-username = os.getenv('GMAIL_MAIL')
-password = os.getenv('GMAIL_PASSWORD')
-target_message_id = "noreply@statuspage.io" # The specific Message-ID header value
-
-# Connect
-mail = imaplib.IMAP4_SSL(imap_server)
-mail.login(username, password)
-mail.select("inbox")
-
-e_id=b'31120'
-try:
-        # Fetch by ID
-        status, msg_data = mail.fetch(e_id, '(RFC822)')
-      
-        
-        if status == 'OK' and msg_data[0][1]:
-            raw_email = msg_data[0][1]
-            msg = email.message_from_bytes(raw_email , policy=default)
-            
-
-            for i in msg.walk():
-                if i.get_content_type() == "text/plain":
-                    body = i.get_content()
-                    
-            model=fetch_model(body)
-            print(model)
-            
-        else:
-            print(f"ID: {e_id.decode()} | Not found or error.")
-            
-except Exception as e:
-        print(f"Error fetching ID: {e}")
-
-mail.close()
-mail.logout()   
+ 
