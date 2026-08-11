@@ -5,8 +5,7 @@ from dotenv import load_dotenv
 import email
 from email.policy import default
 load_dotenv()
-
-
+import re
 
 
 
@@ -40,7 +39,7 @@ def fetch_emails():
     count=0
     records=[]
     for eid in email_ids:
-        if count ==10:
+        if count ==20:
             break
         record={}
         record["email_id"]=eid
@@ -48,10 +47,9 @@ def fetch_emails():
         if record["body"] == False:
             continue # Later think of logging
         record["model"] = fetch_model(record["body"])
-        
+        record["timestamp"]=fetch_timestamp(record["body"])
         records.append(record)
         count+=1
-        print(records)
     mail.close()
     mail.logout() 
     
@@ -59,7 +57,6 @@ def fetch_emails():
 
 
 def fetch_body(mail,eid):
-    print("INside fetch_body with : ",eid)
     try:
             # Fetch by ID
             status, msg_data = mail.fetch(eid, '(RFC822)')
@@ -69,13 +66,11 @@ def fetch_body(mail,eid):
                 for i in msg.walk():
                     if i.get_content_type() == "text/plain":
                         body = i.get_content() 
-                print("Got body" , body)
                 return  body       
                
             else:
                 return False
     except Exception as e:
-        print("Exception",e)
         return False
 
 def fetch_model(msg):
@@ -85,5 +80,11 @@ def fetch_model(msg):
             models.append(i)
     return models
    
-
+def fetch_timestamp(msg):
+    pattern=r"Time posted\s+([A-Z][a-z]{2}\s+\d{1,2},\s+\d{2}:\d{2}\s+UTC)"
+    match=re.search(pattern,msg)
+    if match:
+        timestamp = match.group(1)
+        return timestamp
+    return "" 
  
