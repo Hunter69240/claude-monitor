@@ -16,6 +16,20 @@ mail.select('inbox')
 
 status, message_ids = mail.search(None, 'FROM "noreply@statuspage.io"')
 
+KNOWN_MODELS = [
+        "Mythos 5" ,
+        "Fable 5"  ,
+        "Opus 5"   ,
+        "Sonnet 5"  ,
+        "Haiku 4.5",
+        "Opus 4.8" , 
+        "Opus 4.7",
+        "Opus 4.6" , 
+        "Opus 3" , 
+        "Sonnet 4.6"        
+]
+
+
 
 def fetch_body(mail,eid):
     print("INside fetch_body with : ",eid)
@@ -36,11 +50,60 @@ def fetch_body(mail,eid):
     except Exception as e:
         print("Exception",e)
         return False
-body=fetch_body(mail,b'24650')
-print(body)
 
-pattern=r"Time posted\s+([A-Z][a-z]{2}\s+\d{1,2},\s+\d{2}:\d{2}\s+UTC)"
-match=re.search(pattern,body)
-if match:
-    timestamp = match.group(1)
-    print(timestamp) 
+def fetch_model(msg):
+    models=[]
+    for i in KNOWN_MODELS :
+        if i.lower() in msg.lower():
+            models.append(i)
+    return models
+    
+def fetch_timestamp(msg):
+    pattern=r"Time posted\s+([A-Z][a-z]{2}\s+\d{1,2},\s+\d{2}:\d{2}\s+UTC)"
+    match=re.search(pattern,msg)
+    if match:
+        timestamp = match.group(1)
+        return timestamp
+    return "" 
+
+def fetch_status(msg):
+    pattern = r"(?:Incident status:\s*(\w+)|New incident:\s*(\w+)|Incident resolved(?!\w))"
+    # print(msg)
+    
+    match = re.search(pattern, msg)
+    if match:
+        return (match.group(1) or match.group(2) or "Resolved")
+    return ""
+
+mail_ids = [
+    b'24598',
+    b'24602',
+    b'24614',
+    b'24615',
+    b'24623',
+    b'24626',
+    b'24650',
+    b'24665',
+    b'24773',
+    b'24808'
+]
+records=[]
+for i in mail_ids:
+    record={}
+    record["email_id"]=i
+    record["body"] = fetch_body(mail,i)
+    if record["body"] == False:
+        continue # Later think of logging
+    record["model"] = fetch_model(record["body"])
+    record["timestamp"]=fetch_timestamp(record["body"])
+    record["status"]=fetch_status(record["body"])
+    records.append(record)
+    print(
+    f"ID: {record['email_id']} | "
+    f"Model: {record['model']} | "
+    f"Status: {record['status']} | "
+    f"Timestamp: {record['timestamp']}"
+    )
+
+
+

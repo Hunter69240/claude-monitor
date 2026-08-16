@@ -48,7 +48,14 @@ def fetch_emails():
             continue # Later think of logging
         record["model"] = fetch_model(record["body"])
         record["timestamp"]=fetch_timestamp(record["body"])
+        record["status"]=fetch_status(record["body"])
         records.append(record)
+        print(
+            f"ID: {record['email_id']} | "
+            f"Model: {record['model']} | "
+            f"Status: {record['status']} | "
+            f"Timestamp: {record['timestamp']}"
+        )
         count+=1
     mail.close()
     mail.logout() 
@@ -87,4 +94,13 @@ def fetch_timestamp(msg):
         timestamp = match.group(1)
         return timestamp
     return "" 
+
+def fetch_status(msg):
+    pattern = r"(?:Incident status:\s*(\w+)|New incident:\s*(\w+)|Incident resolved(?!\w))"
+    # print(msg)
+    
+    match = re.search(pattern, msg)
+    if match:
+        return (match.group(1) or match.group(2) or "Resolved")
+    return ""
  
