@@ -68,11 +68,18 @@ def fetch_timestamp(msg):
 
 def fetch_status(msg):
     pattern = r"(?:Incident status:\s*(\w+)|New incident:\s*(\w+)|Incident resolved(?!\w))"
-    # print(msg)
+    print(msg)
     
     match = re.search(pattern, msg)
     if match:
         return (match.group(1) or match.group(2) or "Resolved")
+    return ""
+
+def fetch_incident_id(msg):
+    pattern=r"https://stspg.io/\s*(\w+)"
+    match=re.search(pattern,msg)
+    if match:
+        return match[1]
     return ""
 
 mail_ids = [
@@ -97,12 +104,14 @@ for i in mail_ids:
     record["model"] = fetch_model(record["body"])
     record["timestamp"]=fetch_timestamp(record["body"])
     record["status"]=fetch_status(record["body"])
+    record["incident_id"]=fetch_incident_id(record["body"])
     records.append(record)
     print(
     f"ID: {record['email_id']} | "
     f"Model: {record['model']} | "
     f"Status: {record['status']} | "
-    f"Timestamp: {record['timestamp']}"
+    f"Timestamp: {record['timestamp']} | "
+    f"Incident_Id: {record['incident_id']}"
     )
 
 

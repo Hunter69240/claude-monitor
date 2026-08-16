@@ -49,12 +49,14 @@ def fetch_emails():
         record["model"] = fetch_model(record["body"])
         record["timestamp"]=fetch_timestamp(record["body"])
         record["status"]=fetch_status(record["body"])
+        record["incident_id"]=fetch_incident_id(record["body"])
         records.append(record)
         print(
             f"ID: {record['email_id']} | "
             f"Model: {record['model']} | "
             f"Status: {record['status']} | "
-            f"Timestamp: {record['timestamp']}"
+            f"Timestamp: {record['timestamp']} | "
+            f"Incident_Id: {record['incident_id']}"
         )
         count+=1
     mail.close()
@@ -103,4 +105,13 @@ def fetch_status(msg):
     if match:
         return (match.group(1) or match.group(2) or "Resolved")
     return ""
+
+def fetch_incident_id(msg):
+    pattern=r"https://stspg.io/\s*(\w+)"
+    match=re.search(pattern,msg)
+    if match:
+        return match.group[1]
+    return ""
+
+
  
