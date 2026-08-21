@@ -85,14 +85,8 @@ def fetch_incident_id(msg):
 mail_ids = [
     b'24598',
     b'24602',
-    b'24614',
-    b'24615',
-    b'24623',
+    b'24609',
     b'24626',
-    b'24650',
-    b'24665',
-    b'24773',
-    b'24808'
 ]
 records=[]
 for i in mail_ids:
