@@ -39,17 +39,17 @@ def fetch_emails():
     count=0
     records=[]
     for eid in email_ids:
-        if count ==20:
-            break
+        
         record={}
         record["email_id"]=eid
         record["body"] = fetch_body(mail,eid)
         if record["body"] == False:
             continue # Later think of logging
         record["model"] = fetch_model(record["body"])
-        record["timestamp"]=fetch_timestamp(record["body"])
+        record["occurred_at"]=fetch_timestamp(record["body"])
         record["status"]=fetch_status(record["body"])
         record["incident_id"]=fetch_incident_id(record["body"])
+        
         records.append(record)
         # print(
         #     f"ID: {record['email_id']} | "
