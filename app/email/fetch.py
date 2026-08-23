@@ -6,8 +6,8 @@ import email
 from email.policy import default
 load_dotenv()
 import re
-
-
+import logging
+logger = logging.getLogger(__name__)
 
 KNOWN_MODELS = [
         "Mythos 5" ,
@@ -24,46 +24,43 @@ KNOWN_MODELS = [
 
 
 def fetch_emails():
+    logger.info("Starting email fetch")
+    mail=None
+    try:
+        email_cred=os.getenv('GMAIL_MAIL')
+        pwd_cred=os.getenv('GMAIL_PASSWORD')
 
-    email_cred=os.getenv('GMAIL_MAIL')
-    pwd_cred=os.getenv('GMAIL_PASSWORD')
+        mail = imaplib.IMAP4_SSL('imap.gmail.com')
+        mail.login(email_cred,pwd_cred)
+        mail.select('inbox')
 
-    mail = imaplib.IMAP4_SSL('imap.gmail.com')
-    mail.login(email_cred,pwd_cred)
-    mail.select('inbox')
+        status, message_ids = mail.search(None, 'FROM "noreply@statuspage.io"')
 
-    status, message_ids = mail.search(None, 'FROM "noreply@statuspage.io"')
-
-    email_ids = message_ids[0].split()
-
-    count=0
-    records=[]
-    for eid in email_ids:
-        
-        record={}
-        record["email_id"]=eid
-        record["body"] = fetch_body(mail,eid)
-        if record["body"] == False:
-            continue # Later think of logging
-        record["model"] = fetch_model(record["body"])
-        record["occurred_at"]=fetch_timestamp(record["body"])
-        record["status"]=fetch_status(record["body"])
-        record["incident_id"]=fetch_incident_id(record["body"])
-        
-        records.append(record)
-        # print(
-        #     f"ID: {record['email_id']} | "
-        #     f"Model: {record['model']} | "
-        #     f"Status: {record['status']} | "
-        #     f"Timestamp: {record['timestamp']} | "
-        #     f"Incident_Id: {record['incident_id']}"
-        # )
-        count+=1
-    mail.close()
-    mail.logout() 
+        email_ids = message_ids[0].split()
+        logger.info("Found %d matching emails", len(email_ids))
+        records=[]
+        for eid in email_ids:
+            
+            record={}
+            record["email_id"]=eid
+            record["body"] = fetch_body(mail,eid)
+            if record["body"] == False:
+                logger.warning("Failed to fetch email body for ID %s", eid)
+                continue
+            record["model"] = fetch_model(record["body"])
+            record["occurred_at"]=fetch_timestamp(record["body"])
+            record["status"]=fetch_status(record["body"])
+            record["incident_id"]=fetch_incident_id(record["body"])
+            
+            records.append(record)
+        logger.info("Fetched %d email records", len(records))
+        return records
+    finally:
+        if mail is not None:
+            mail.close()
+            mail.logout()
     
-    return records
-
+    
 
 def fetch_body(mail,eid):
     try:
@@ -79,7 +76,7 @@ def fetch_body(mail,eid):
                
             else:
                 return False
-    except Exception as e:
+    except Exception:
         return False
 
 def fetch_model(msg):
@@ -99,8 +96,7 @@ def fetch_timestamp(msg):
 
 def fetch_status(msg):
     pattern = r"(?:Incident status:\s*(\w+)|New incident:\s*(\w+)|Incident resolved(?!\w))"
-    # print(msg)
-    
+
     match = re.search(pattern, msg)
     if match:
         return (match.group(1) or match.group(2) or "Resolved")

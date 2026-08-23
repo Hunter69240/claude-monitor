@@ -1,8 +1,16 @@
+#Gets dict from fetch.py and converts to dataframe
 import pandas as pd
 import time
+import logging
+logger = logging.getLogger(__name__)
+
 
 year=time.localtime().tm_year
 def transform(records):
+    logger.info("Starting transformation")
+    if not records:
+        logger.warning("No records to transform")
+        return pd.DataFrame()
     df=pd.DataFrame.from_dict(records)
     df=df[['email_id','model','occurred_at','status','incident_id']]
 
@@ -22,5 +30,5 @@ def transform(records):
     df['slug'] = (df['email_id'].astype(str) + df['model'].astype(str)).where(
     df['model'].notna(),
     df['email_id'].astype(str))
-    
+    logger.info("Transformation completed with %d rows", len(df))
     return df
