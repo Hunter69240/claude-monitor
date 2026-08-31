@@ -23,7 +23,7 @@ KNOWN_MODELS = [
 ]
 
 
-def fetch_emails():
+def fetch_emails(maximum_email_id):
     logger.info("Starting email fetch")
     mail=None
     try:
@@ -34,25 +34,27 @@ def fetch_emails():
         mail.login(email_cred,pwd_cred)
         mail.select('inbox')
 
-        status, message_ids = mail.search(None, 'FROM "noreply@statuspage.io"')
+        status, message_ids = mail.uid("search",None, f'FROM "noreply@statuspage.io" UID {maximum_email_id + 1}:*')
 
         email_ids = message_ids[0].split()
         logger.info("Found %d matching emails", len(email_ids))
         records=[]
-        for eid in email_ids:
+        for eid in email_ids: 
+           
+            if int(eid) > maximum_email_id:
+                record={}
+                record["email_id"]=eid
+                record["body"] = fetch_body(mail,eid)
+                if record["body"] == False:
+                    logger.warning("Failed to fetch email body for ID %s", eid)
+                    continue
+                record["model"] = fetch_model(record["body"])
+                record["occurred_at"]=fetch_timestamp(record["body"])
+                record["status"]=fetch_status(record["body"])
+                record["incident_id"]=fetch_incident_id(record["body"])
+                    
+                records.append(record)
             
-            record={}
-            record["email_id"]=eid
-            record["body"] = fetch_body(mail,eid)
-            if record["body"] == False:
-                logger.warning("Failed to fetch email body for ID %s", eid)
-                continue
-            record["model"] = fetch_model(record["body"])
-            record["occurred_at"]=fetch_timestamp(record["body"])
-            record["status"]=fetch_status(record["body"])
-            record["incident_id"]=fetch_incident_id(record["body"])
-            
-            records.append(record)
         logger.info("Fetched %d email records", len(records))
         return records
     finally:
@@ -65,7 +67,7 @@ def fetch_emails():
 def fetch_body(mail,eid):
     try:
             # Fetch by ID
-            status, msg_data = mail.fetch(eid, '(RFC822)')
+            status, msg_data = mail.uid("fetch",eid, '(RFC822)')
             if status == 'OK' and msg_data[0][1]:
                 raw_email = msg_data[0][1]
                 msg = email.message_from_bytes(raw_email , policy=default)

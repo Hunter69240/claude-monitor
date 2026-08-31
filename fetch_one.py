@@ -68,7 +68,7 @@ def fetch_timestamp(msg):
 
 def fetch_status(msg):
     pattern = r"(?:Incident status:\s*(\w+)|New incident:\s*(\w+)|Incident resolved(?!\w))"
-    print(msg)
+    # print(msg)
     
     match = re.search(pattern, msg)
     if match:
@@ -106,7 +106,5 @@ for i in mail_ids:
     f"Status: {record['status']} | "
     f"Timestamp: {record['timestamp']} | "
     f"Incident_Id: {record['incident_id']}"
+    
     )
-
-
-

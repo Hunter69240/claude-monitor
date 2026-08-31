@@ -28,7 +28,19 @@ def test_connection():
         logger.error("Database connection failed: %s", e)
         return False
 
+def fetch_max_id():
+    try:
+        with engine.connect() as conn:
+            res=conn.execute(text("select max(email_id) as last_email_id from claude_entries"))
+            maximum=res.scalar()
+        logger.info("Fetching Last email id: %s",maximum)
+        return maximum
+    except OperationalError as e:
+        logger.error("Database max fetch failed: %s", e)
+        return False
 
 if __name__ == "__main__":
+    
     if not test_connection():
         exit(1)
+    fetch_max_id()
